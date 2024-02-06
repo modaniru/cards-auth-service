@@ -17,12 +17,24 @@ func logger(next http.Handler) http.Handler {
 		next.ServeHTTP(lrw, r)
 		//request end time
 		end := time.Now()
+		status := lrw.Status()
+		if status >= 400 {
+			slog.Error(
+				"user request",
+				"url", r.RequestURI,
+				"method", r.Method,
+				"status", status,
+				"time", end.Sub(start).Microseconds(),
+			)
+			return
+		}
+
 		slog.Info(
 			"user request",
 			"url", r.RequestURI,
-			"method", r.Method, 
-			"status", lrw.Status(),
-			"time", end.Sub(start).Microseconds(), 
+			"method", r.Method,
+			"status", status,
+			"time", end.Sub(start).Microseconds(),
 		)
 	})
 }
