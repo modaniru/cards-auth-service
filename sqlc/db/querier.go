@@ -8,6 +8,8 @@ import (
 )
 
 type Querier interface {
+	AddUserAuthType(ctx context.Context, arg AddUserAuthTypeParams) error
+	CreateEmptyUser(ctx context.Context) (int32, error)
 	GetUserByAuthTypeAndAuthId(ctx context.Context, arg GetUserByAuthTypeAndAuthIdParams) (sql.NullInt32, error)
 }
 

@@ -8,6 +8,32 @@ import (
 	"database/sql"
 )
 
+const addUserAuthType = `-- name: AddUserAuthType :exec
+INSERT INTO users_auths (user_id, auth_type, auth_id) values ($1, $2, $3)
+`
+
+type AddUserAuthTypeParams struct {
+	UserID   sql.NullInt32
+	AuthType sql.NullString
+	AuthID   sql.NullString
+}
+
+func (q *Queries) AddUserAuthType(ctx context.Context, arg AddUserAuthTypeParams) error {
+	_, err := q.db.ExecContext(ctx, addUserAuthType, arg.UserID, arg.AuthType, arg.AuthID)
+	return err
+}
+
+const createEmptyUser = `-- name: CreateEmptyUser :one
+INSERT INTO users DEFAULT VALUES RETURNING id
+`
+
+func (q *Queries) CreateEmptyUser(ctx context.Context) (int32, error) {
+	row := q.db.QueryRowContext(ctx, createEmptyUser)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getUserByAuthTypeAndAuthId = `-- name: GetUserByAuthTypeAndAuthId :one
 SELECT user_id FROM users_auths WHERE auth_type = $1 AND auth_id = $2
 `

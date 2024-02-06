@@ -27,10 +27,9 @@ func main() {
 	db := db.New(conn)
 	slog.Debug("database connect init")
 
-
 	s := server.NewServer(
 		&auth.AuthStub{},
-		authservices.NewVKAuth(*token, db),
+		authservices.NewVKAuth(*token, db, conn),
 	)
 	slog.Debug("server init")
 	slog.Debug("start server")
