@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -10,9 +11,13 @@ import (
 )
 
 func (s *Server) initRouter() {
-	s.router.Use(logger)
+	s.router.Use(s.logger)
 	s.router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ping"))
+	})
+	secure := s.router.With(s.jwtMiddleware)
+	secure.Get("/secure-ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("ping %d", r.Context().Value("id"))))
 	})
 
 	s.router.Post("/sign-up", s.SignUp)
@@ -41,7 +46,28 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 	//user id to jwt and refresh
 
-	slog.Debug("test", "id", id)
+	token, err := s.jwtService.GetJwt(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	data, err := json.Marshal(map[string]interface{}{
+		"jwt": token,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	mapa, err := s.jwtService.ParseJwt(token)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	slog.Debug("test", "mapa", mapa)
+
+	w.Write(data)
 }
 
 //TODO

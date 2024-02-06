@@ -11,6 +11,7 @@ import (
 	"github.com/modaniru/cards-auth-service/internal/server"
 	"github.com/modaniru/cards-auth-service/internal/service/auth"
 	authservices "github.com/modaniru/cards-auth-service/internal/service/auth/auth_services"
+	jwtservice "github.com/modaniru/cards-auth-service/internal/service/jwt_service"
 	"github.com/modaniru/cards-auth-service/sqlc/db"
 	"github.com/phsym/console-slog"
 )
@@ -28,6 +29,7 @@ func main() {
 	slog.Debug("database connect init")
 
 	s := server.NewServer(
+		jwtservice.NewJwtService("salt"),
 		&auth.AuthStub{},
 		authservices.NewVKAuth(*token, db, conn),
 	)
