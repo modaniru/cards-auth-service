@@ -2,30 +2,39 @@ package authservices
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
-	"log/slog"
+	"github.com/modaniru/cards-auth-service/internal/storage"
 	"strconv"
 
 	"github.com/SevereCloud/vksdk/v2/api"
-	"github.com/modaniru/cards-auth-service/sqlc/db"
 )
 
 type VKAuth struct {
-	vkapi   *api.VK
-	queries *db.Queries
-	db      *sql.DB
+	vkapi       *api.VK
+	userStorage storage.IUser
 }
 
-func NewVKAuth(token string, queries *db.Queries, db *sql.DB) *VKAuth {
-	return &VKAuth{vkapi: api.NewVK(token), queries: queries, db: db}
+// NewVKAuth return Auth implementation
+func NewVKAuth(token string, userStorage storage.IUser) *VKAuth {
+	return &VKAuth{
+		vkapi:       api.NewVK(token),
+		userStorage: userStorage,
+	}
 }
 
+// credentials json type must look as vkToken
 type vkToken struct {
 	Token string `json:"token"`
 }
 
+// SignIn is vk oauth implementation of Auth
+// credentials must be look as
+//
+//	{
+//		"token": "vk_oauth_token"
+//	}
+//
+// IMPORTANT: user oauth token must be generated using app token. app token in client side must be equal with server side
 func (v *VKAuth) SignIn(c context.Context, credentials []byte) (int, error) {
 	var token vkToken
 	err := json.Unmarshal(credentials, &token)
@@ -38,50 +47,14 @@ func (v *VKAuth) SignIn(c context.Context, credentials []byte) (int, error) {
 		return 0, err
 	}
 
-	userId, err := v.queries.GetUserByAuthTypeAndAuthId(c, db.GetUserByAuthTypeAndAuthIdParams{
-		AuthType: sql.NullString{String: v.Key(), Valid: true},
-		AuthID:   sql.NullString{String: strconv.Itoa(response.UserID), Valid: true},
-	})
-
-	if errors.Is(err, sql.ErrNoRows) {
-		slog.Info("user not found, register.", "vk_id", response.UserID)
-		tx, err := v.db.Begin()
-		if err != nil {
-			return 0, err
-		}
-		defer tx.Rollback()
-
-		q := v.queries.WithTx(tx)
-		id, err := q.CreateEmptyUser(c)
-		if err != nil {
-			return 0, err
-		}
-
-		err = q.AddUserAuthType(c, db.AddUserAuthTypeParams{
-			UserID:   sql.NullInt32{Int32: id, Valid: true},
-			AuthType: sql.NullString{String: v.Key(), Valid: true},
-			AuthID:   sql.NullString{String: strconv.Itoa(response.UserID), Valid: true},
-		})
-		if err != nil {
-			return 0, err
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			return 0, err
-		}
-
-		return int(id), nil
-	}
-
+	id, err := v.userStorage.GetOrCreateUserIdByAuthType(c, v.Key(), strconv.Itoa(response.UserID))
 	if err != nil {
 		return 0, err
 	}
-
-	return int(userId.Int32), nil
+	return id, nil
 }
 
-// return service key
+// Key return service key
 func (v *VKAuth) Key() string {
 	return "vk"
 }

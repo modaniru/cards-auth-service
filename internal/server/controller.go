@@ -16,6 +16,7 @@ func (s *Server) initRouter() {
 		w.Write([]byte("ping"))
 	})
 	secure := s.router.With(s.jwtMiddleware)
+	//TODO get user by jwt
 	secure.Get("/secure-ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("ping %d", r.Context().Value("id"))))
 	})
@@ -59,13 +60,6 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	mapa, err := s.jwtService.ParseJwt(token)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	slog.Debug("test", "mapa", mapa)
 
 	w.Write(data)
 }

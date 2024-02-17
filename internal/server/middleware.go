@@ -40,16 +40,16 @@ func (s *Server) logger(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) jwtMiddleware(next http.Handler) http.Handler{
+func (s *Server) jwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("Authorization")[7:]
 		id, err := s.jwtService.ParseJwt(token)
-		if err != nil{
+		if err != nil {
 			writeError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "id", id))//TODO
+		r = r.WithContext(context.WithValue(r.Context(), "id", id)) //TODO
 		next.ServeHTTP(w, r)
 	})
 }

@@ -9,7 +9,7 @@ import (
 type Server struct {
 	router       *chi.Mux
 	authServices map[string]auth.Auth
-	jwtService *jwtservice.JwtService
+	jwtService   *jwtservice.JwtService
 }
 
 func NewServer(jwtService *jwtservice.JwtService, services ...auth.Auth) *Server {

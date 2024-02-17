@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"flag"
+	"github.com/modaniru/cards-auth-service/internal/storage"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,21 +17,30 @@ import (
 )
 
 func main() {
-	token := flag.String("t", "", "vk app token stub")
-	flag.Parse()
+	//token := flag.String("t", "", "vk app token stub")
 
 	//TODO config file
 	InitLogger("DEV")
 	slog.Debug("logger init")
 
-	conn, _ := sql.Open("postgres", "postgres://postgres:postgres@localhost:5555/postgres?sslmode=disable")
+	token := os.Getenv("TOKEN")
+	if token == "" {
+		slog.Error("missing token")
+		os.Exit(1)
+	}
+	slog.Debug("token was load")
+
+	conn, _ := sql.Open("postgres", "postgres://postgres:postgres@postgres/postgres?sslmode=disable")
 	db := db.New(conn)
 	slog.Debug("database connect init")
+
+	globalStorage := storage.NewStorage(conn, db)
+	slog.Debug("storage init")
 
 	s := server.NewServer(
 		jwtservice.NewJwtService("salt"),
 		&auth.AuthStub{},
-		authservices.NewVKAuth(*token, db, conn),
+		authservices.NewVKAuth(token, globalStorage),
 	)
 	slog.Debug("server init")
 	slog.Debug("start server")

@@ -1,0 +1,12 @@
+version: "3"
+services:
+  cards-auth-service:
+    build: ./
+    env_file:
+      - .env
+    ports:
+      - 80:80
+  postgres:
+    image: postgres:latest
+    env_file:
+      - .env
