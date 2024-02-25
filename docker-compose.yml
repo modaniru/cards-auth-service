@@ -4,6 +4,8 @@ services:
     build: ./
     env_file:
       - .env
+    volumes:
+      - ./config.yaml:/config.yaml
     ports:
       - 80:80
   postgres:

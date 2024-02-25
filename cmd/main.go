@@ -38,7 +38,6 @@ func main() {
 	slog.Debug("logger init")
 
 	token := os.Getenv("TOKEN")
-	dataSource := os.Getenv(cfg.Postgres.DataSource)
 
 	if token == "" {
 		slog.Error("missing token")
@@ -54,7 +53,7 @@ func main() {
 		}
 	}()
 
-	conn, _ := sql.Open("postgres", dataSource)
+	conn, _ := sql.Open("postgres", cfg.Postgres.DataSource)
 	db := db.New(conn)
 	slog.Debug("database connect init")
 
