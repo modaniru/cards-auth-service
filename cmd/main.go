@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/modaniru/cards-auth-service/internal/config"
 	"github.com/modaniru/cards-auth-service/internal/storage"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
@@ -24,17 +25,20 @@ todo configuration
 todo dockerfile
 todo docker-compose
 todo api gateway
+todo ttl in config
+todo salt in config
 */
 
 func main() {
 	//token := flag.String("t", "", "vk app token stub")
+	cfg := config.MustLoad()
 
 	//TODO config file
-	InitLogger("DEV")
+	InitLogger(cfg.Env)
 	slog.Debug("logger init")
 
 	token := os.Getenv("TOKEN")
-	dataSource := os.Getenv("DATA_SOURCE")
+	dataSource := os.Getenv(cfg.Postgres.DataSource)
 
 	if token == "" {
 		slog.Error("missing token")
@@ -64,18 +68,18 @@ func main() {
 	)
 	slog.Debug("server init")
 	slog.Debug("start server")
-	http.ListenAndServe(":80", s.GetRouter())
+	http.ListenAndServe(":"+cfg.Port, s.GetRouter())
 }
 
-// init logger [DEV, DEBUG, PROD]
+// init logger [DEV, DEBUG, PROD] move to another go file and create enums with env types
 func InitLogger(level string) {
 	var handler slog.Handler
 	switch level {
-	case "PROD":
+	case "prod":
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		})
-	case "DEBUG":
+	case "debug":
 		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})

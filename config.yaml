@@ -1,0 +1,8 @@
+port: 80
+salt: super_secret_salt
+ttl: 1h
+env: dev
+#idk where better place postgres data
+postgres:
+  data_source: postgres://postgres:postgres@localhost:5555/postgres?sslmode=disable
+
