@@ -7,12 +7,22 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"math/rand"
 	"net/http"
 )
 
 func (s *Server) initRouter() {
 	s.router.Use(s.logger)
 	s.router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+		n := rand.Intn(5)
+		if n == 0 {
+			w.WriteHeader(400)
+			return
+		}
+		if n == 1 {
+			w.WriteHeader(500)
+			return
+		}
 		w.Write([]byte("ping"))
 	})
 	secure := s.router.With(s.jwtMiddleware)

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"github.com/modaniru/cards-auth-service/internal/storage"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,7 +15,16 @@ import (
 	jwtservice "github.com/modaniru/cards-auth-service/internal/service/jwt_service"
 	"github.com/modaniru/cards-auth-service/sqlc/db"
 	"github.com/phsym/console-slog"
+	_ "net/http/pprof"
 )
+
+/*
+todo migration
+todo configuration
+todo dockerfile
+todo docker-compose
+todo api gateway
+*/
 
 func main() {
 	//token := flag.String("t", "", "vk app token stub")
@@ -24,13 +34,23 @@ func main() {
 	slog.Debug("logger init")
 
 	token := os.Getenv("TOKEN")
+	dataSource := os.Getenv("DATA_SOURCE")
+
 	if token == "" {
 		slog.Error("missing token")
 		os.Exit(1)
 	}
 	slog.Debug("token was load")
 
-	conn, _ := sql.Open("postgres", "postgres://postgres:postgres@postgres/postgres?sslmode=disable")
+	go http.ListenAndServe(":6060", nil)
+	go func() {
+		err := prometheus(":8082")
+		if err != nil {
+			slog.Error(err.Error())
+		}
+	}()
+
+	conn, _ := sql.Open("postgres", dataSource)
 	db := db.New(conn)
 	slog.Debug("database connect init")
 
@@ -66,4 +86,10 @@ func InitLogger(level string) {
 	}
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+}
+
+func prometheus(port string) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	return http.ListenAndServe(port, mux)
 }

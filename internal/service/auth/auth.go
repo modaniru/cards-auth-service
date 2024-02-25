@@ -18,9 +18,9 @@ type Request struct {
 	Login string `json:"login"`
 }
 
-var users map[int]string = make(map[int]string)
-var logins map[string]int = make(map[string]int)
-var id int = 1
+var users = make(map[int]string)
+var logins = make(map[string]int)
+var id = 1
 
 func (a *AuthStub) SignIn(c context.Context, credentials []byte) (int, error) {
 	req := Request{}

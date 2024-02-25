@@ -15,28 +15,32 @@ func (s *Server) logger(next http.Handler) http.Handler {
 		lrw := negroni.NewResponseWriter(w)
 		//request start time
 		start := time.Now()
-		next.ServeHTTP(lrw, r)
-		//request end time
-		end := time.Now()
-		status := lrw.Status()
-		if status >= 400 {
-			slog.Error(
+		defer func() {
+			requestTime := time.Since(start)
+			status := lrw.Status()
+			observe(requestTime, status)
+
+			if status >= 400 {
+				slog.Error(
+					"user request",
+					"url", r.RequestURI,
+					"method", r.Method,
+					"status", status,
+					"time", requestTime.Microseconds(),
+				)
+				return
+			}
+
+			slog.Info(
 				"user request",
 				"url", r.RequestURI,
 				"method", r.Method,
 				"status", status,
-				"time", end.Sub(start).Microseconds(),
+				"time", requestTime.Microseconds(),
 			)
-			return
-		}
-
-		slog.Info(
-			"user request",
-			"url", r.RequestURI,
-			"method", r.Method,
-			"status", status,
-			"time", end.Sub(start).Microseconds(),
-		)
+		}()
+		next.ServeHTTP(lrw, r)
+		//request end time
 	})
 }
 
